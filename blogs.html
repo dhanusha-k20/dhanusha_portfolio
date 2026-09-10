@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blogs — Dhanusha K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="path">~/dhanusha-k<span>/explore/blogs</span></div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#explore" class="active">Explore</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+  </div>
+
+  <div class="bg-grid"></div>
+  <div class="global-scan"></div>
+
+  <main class="dir-page">
+    <h1 class="explore-heading">BLOGS <span class="slash">/</span></h1>
+
+    <a href="index.html#explore" class="dir-back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+      .. (parent directory)
+    </a>
+
+    <div class="dir-tiles" id="dirTiles"></div>
+  </main>
+
+  <div class="footerbar">
+    <div class="hint" id="footerHint">3 items &middot; click to open</div>
+  </div>
+
+  <div class="cert-modal" id="certModal" role="dialog" aria-modal="true" aria-label="File viewer">
+    <div class="cert-modal-box">
+      <div class="cert-modal-title">
+        <span id="certModalLabel">FILE</span>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <a id="certModalOpen" href="#" target="_blank" rel="noopener" style="color:var(--grey); text-decoration:none; letter-spacing:1px;">open in new tab &#8599;</a>
+          <button type="button" class="cert-modal-close" id="certModalClose" aria-label="Close">&times;</button>
+        </div>
+      </div>
+      <div class="cert-modal-body">
+        <img id="certModalImg" alt="" style="display:none;">
+        <iframe id="certModalFrame" title="" style="display:none;"></iframe>
+        <div class="cert-modal-fallback" id="certModalFallback">
+          File not added yet.<br>
+          Drop it at <code id="certModalPath"></code> to display it here.
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/*
+  ===========================================================
+  EDIT THIS LIST — these are demo placeholders since you haven't published any blog posts yet. Replace with your real posts as you write them.
+  Each entry needs: name, date, type, size, path (where the
+  actual PDF will live once you add it).
+  ===========================================================
+*/
+const ITEMS = [
+  {
+    "name": "intro-to-web-app-vapt.pdf",
+    "date": "2026-08-01",
+    "type": "PDF Document",
+    "size": "\u2014",
+    "path": "blogs/intro-to-web-app-vapt.pdf"
+  },
+  {
+    "name": "understanding-cors-misconfigurations.pdf",
+    "date": "2026-07-18",
+    "type": "PDF Document",
+    "size": "\u2014",
+    "path": "blogs/understanding-cors-misconfigurations.pdf"
+  },
+  {
+    "name": "session-fixation-explained.pdf",
+    "date": "2026-06-30",
+    "type": "PDF Document",
+    "size": "\u2014",
+    "path": "blogs/session-fixation-explained.pdf"
+  }
+];
+
+const dirTiles = document.getElementById('dirTiles');
+
+ITEMS.forEach((item) => {
+  const tile = document.createElement('div');
+  tile.className = 'dir-tile';
+  tile.setAttribute('role', 'button');
+  tile.setAttribute('tabindex', '0');
+  tile.innerHTML = `
+    <div class="dir-tile-glare"></div>
+    <svg class="tile-icon" viewBox="0 0 24 28">
+      <path d="M2 1h13l7 7v19H2z"/>
+      <path d="M15 1v7h7" fill="none"/>
+    </svg>
+    <div class="tile-name">${item.name}</div>
+    <div class="tile-meta">
+      <span>${item.date}</span>
+      <span>${item.size}</span>
+    </div>
+  `;
+  tile.addEventListener('click', () => openFile(item));
+  tile.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') openFile(item);
+  });
+
+  // subtle 3D tilt following the cursor
+  tile.addEventListener('mousemove', (e) => {
+    const rect = tile.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -7;
+    const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 7;
+    tile.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
+    tile.style.setProperty('--gx', `${(x / rect.width) * 100}%`);
+    tile.style.setProperty('--gy', `${(y / rect.height) * 100}%`);
+  });
+  tile.addEventListener('mouseleave', () => {
+    tile.style.transform = '';
+  });
+
+  dirTiles.appendChild(tile);
+});
+
+const certModal = document.getElementById('certModal');
+const certModalImg = document.getElementById('certModalImg');
+const certModalFrame = document.getElementById('certModalFrame');
+const certModalFallback = document.getElementById('certModalFallback');
+const certModalPath = document.getElementById('certModalPath');
+const certModalLabel = document.getElementById('certModalLabel');
+const certModalClose = document.getElementById('certModalClose');
+const certModalOpen = document.getElementById('certModalOpen');
+
+function openFile(item){
+  certModalLabel.textContent = item.name.toUpperCase();
+  certModalPath.textContent = item.path;
+  if (certModalOpen) certModalOpen.href = item.path;
+  certModalImg.style.display = 'none';
+  certModalFrame.style.display = 'none';
+  certModalFallback.style.display = 'none';
+
+  const isPdf = item.path.toLowerCase().endsWith('.pdf');
+
+  if (isPdf){
+    certModalFrame.onload = () => { certModalFrame.style.display = 'block'; };
+    certModalFrame.src = item.path;
+    certModalFrame.style.display = 'block';
+  } else {
+    certModalImg.onload = () => { certModalImg.style.display = 'block'; };
+    certModalImg.onerror = () => {
+      certModalImg.style.display = 'none';
+      certModalFallback.style.display = 'block';
+    };
+    certModalImg.alt = item.name;
+    certModalImg.src = item.path;
+  }
+
+  certModal.classList.add('open');
+  certModalClose.focus();
+}
+
+function closeCert(){
+  certModal.classList.remove('open');
+  certModalImg.src = '';
+  certModalFrame.src = '';
+}
+
+if (certModalClose) certModalClose.addEventListener('click', closeCert);
+if (certModal){
+  certModal.addEventListener('click', (e) => {
+    if (e.target === certModal) closeCert();
+  });
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && certModal.classList.contains('open')) closeCert();
+});
+
+document.querySelectorAll('.topbar nav a[href="#"]').forEach(a => {
+  a.addEventListener('click', (e) => e.preventDefault());
+});
+</script>
+
+</body>
+</html>

@@ -1,5 +1,5 @@
 /* ===========================================================
-   SHARED STYLESHEET — used by index.html and about.html
+   SHARED STYLESHEET - used by index.html and about.html
    Keeping this in one file means both pages always stay in
    sync visually, and the crossfade transition (transition.js)
    can swap page content without needing to reload any CSS.
@@ -62,7 +62,7 @@ body{
 .contact-layer{ z-index:4; }
 
 /* plain standalone pages (about.html on its own) don't use the scene/stage
-   wrapper — this just makes sure such content still sits correctly */
+   wrapper - this just makes sure such content still sits correctly */
 .standalone{ position:relative; }
 
 /* ---------- TOP BAR ---------- */
@@ -164,7 +164,7 @@ body{
 }
 
 /* ===========================================================
-   HOME PAGE — hero section
+   HOME PAGE - hero section
    =========================================================== */
 .hero{
   position:relative;
@@ -204,7 +204,7 @@ body{
   padding:0 24px;
 }
 
-/* HUD corner brackets — shared; hero size is the default,
+/* HUD corner brackets - shared; hero size is the default,
    about page's terminal panel uses the smaller override below */
 .bracket{
   position:absolute;
@@ -216,7 +216,7 @@ body{
 .bracket.bl{bottom:-1px; left:-1px; border-right:none; border-top:none;}
 .bracket.br{bottom:-1px; right:-1px; border-left:none; border-top:none;}
 
-/* HUD corner brackets — smaller variant used inside the terminal panel */
+/* HUD corner brackets - smaller variant used inside the terminal panel */
 .terminal .bracket{width:22px; height:22px;}
 
 .prompt-line{
@@ -311,7 +311,7 @@ body{
 }
 
 /* ===========================================================
-   ABOUT PAGE — terminal panel
+   ABOUT PAGE - terminal panel
    =========================================================== */
 .bg-grid{
   position:fixed; inset:0;
@@ -418,7 +418,7 @@ body{
 }
 
 /* ===========================================================
-   EXPLORE PAGE — directory-style folder grid
+   EXPLORE PAGE - directory-style folder grid
    =========================================================== */
 .explore-wrap{
   position:relative;
@@ -609,6 +609,22 @@ body{
   letter-spacing:0.5px;
   color:var(--grey);
   transform:translateZ(12px);
+}
+
+.tile-platform{
+  position:absolute;
+  top:14px;
+  right:14px;
+  font-family:'JetBrains Mono', monospace;
+  font-size:9px;
+  letter-spacing:0.8px;
+  text-transform:uppercase;
+  color:var(--red);
+  border:1px solid rgba(228,32,42,0.35);
+  background:rgba(228,32,42,0.08);
+  padding:3px 8px;
+  border-radius:3px;
+  transform:translateZ(24px);
 }
 
 @media (max-width:700px){
@@ -823,3 +839,170 @@ body{
   .contact-info-panel{ padding:26px 20px; gap:28px; border-radius:16px; }
   .social-icon{ width:46px; height:46px; }
 }
+
+/* ===========================================================
+   BLOG ARTICLE PAGES - a clean, readable long-form layout
+   (Medium-style: serif body copy, generous spacing, narrow
+   column) instead of a boxed terminal panel. Headings and
+   chrome stay in the site's usual fonts for brand consistency;
+   only the article body switches to a reading-friendly serif.
+   =========================================================== */
+.article-page{
+  position:relative;
+  z-index:2;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  padding:130px 24px 110px;
+}
+
+.article-container{
+  width:100%;
+  max-width:700px;
+}
+
+.article-back{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  color:var(--grey);
+  text-decoration:none;
+  font-size:11.5px;
+  letter-spacing:0.5px;
+  margin-bottom:40px;
+  transition:color .18s ease;
+}
+.article-back svg{
+  width:13px; height:13px;
+  stroke:var(--grey);
+  transition:stroke .18s ease;
+}
+.article-back:hover, .article-back:focus-visible{ color:var(--ink); }
+.article-back:hover svg, .article-back:focus-visible svg{ stroke:var(--red); }
+
+.article-title{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:700;
+  font-size:clamp(28px, 4.5vw, 44px);
+  line-height:1.15;
+  letter-spacing:-0.5px;
+  color:var(--ink);
+  margin-bottom:20px;
+}
+
+.article-meta{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+  font-family:'JetBrains Mono', monospace;
+  font-size:11.5px;
+  color:var(--grey);
+  padding-bottom:30px;
+  margin-bottom:40px;
+  border-bottom:1px solid var(--line);
+}
+.article-meta .dot{ color:rgba(228,32,42,0.5); }
+
+.article-body{
+  font-family:'Lora', Georgia, 'Times New Roman', serif;
+  font-size:18px;
+  line-height:1.85;
+  color:var(--ink);
+}
+.article-body p{ margin:0 0 26px; }
+.article-body h2{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:700;
+  font-size:25px;
+  line-height:1.3;
+  color:var(--ink);
+  margin:46px 0 18px;
+}
+.article-body h3{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:700;
+  font-size:19px;
+  color:var(--ink);
+  margin:34px 0 14px;
+}
+.article-body blockquote{
+  border-left:3px solid var(--red);
+  padding:2px 0 2px 22px;
+  margin:34px 0;
+  color:var(--grey);
+  font-style:italic;
+}
+.article-body code{
+  font-family:'JetBrains Mono', monospace;
+  font-size:14.5px;
+  background:rgba(228,32,42,0.09);
+  color:var(--red);
+  padding:2px 6px;
+  border-radius:3px;
+}
+.article-body pre{
+  font-family:'JetBrains Mono', monospace;
+  font-size:13px;
+  line-height:1.65;
+  background:var(--bg-deep);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:20px;
+  overflow-x:auto;
+  margin:30px 0;
+}
+.article-body pre code{
+  background:none;
+  padding:0;
+  color:var(--ink);
+}
+.article-body a{ color:var(--red); }
+.article-body ul, .article-body ol{ margin:0 0 26px 22px; }
+.article-body li{ margin-bottom:10px; }
+.article-body strong{ color:var(--ink); }
+
+.article-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:52px;
+  padding-top:30px;
+  border-top:1px solid var(--line);
+}
+
+.article-stub{
+  padding:60px 0;
+  text-align:center;
+  color:var(--grey);
+  font-family:'JetBrains Mono', monospace;
+  font-size:13px;
+  line-height:1.8;
+}
+.article-stub code{
+  color:var(--red);
+  font-size:12px;
+}
+
+@media (max-width:700px){
+  .article-page{ padding:110px 20px 90px; }
+  .article-body{ font-size:16.5px; }
+}
+/* ===========================================================
+   TABLE INSIDE BLOGS
+   =========================================================== */
+.article-body table{display:block;overflow-x:auto;border-collapse:collapse;margin:34px 0;font:16px/1.6 'Lora',serif;background:var(--bg-deep);border:1px solid var(--line)}
+.article-body th,.article-body td{padding:14px 18px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.article-body th{font-family:'Space Grotesk',sans-serif;background:rgba(228,32,42,.1);border-bottom-color:var(--red-deep)}
+.article-body td:first-child{color:var(--grey);font-weight:600}
+.article-body tr:last-child td{border-bottom:none}
+.article-body td code{font-size:13px;white-space:nowrap}
+
+/* ===========================================================
+   CODE COLORS INSIDE BLOGS
+   =========================================================== */
+.article-body .tok-fn{color:#4687e1} /*function/method names: use, header, next*/
+.article-body .tok-kw{color:#B84F05;font-weight:600} /*Keywords: req, res, next*/
+.article-body .tok-str{color:#4FA64E} /*string literals*/
+.article-body .tok-sym{color:#AF5DD8} /*symbols, conditions*/
+.article-body .tok-com{color:var(--grey);font-style:italic} /*Comments*/

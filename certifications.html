@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Certifications — Dhanusha K</title>
+<title>Certifications - Dhanusha K</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -61,31 +61,34 @@
 <script>
 /*
   ===========================================================
-  EDIT THIS LIST — these point at the same certs/ files used on the Home page cubes — update the date/size fields below to the real values.
-  Each entry needs: name, date, type, size, path (where the
+  EDIT THIS LIST - these point at the same certs/ files used on the Home page cubes - update the date/size fields below.
+  Each entry needs: name, date, type, size, platform, path (where the
   actual PDF will live once you add it).
   ===========================================================
 */
 const ITEMS = [
   {
-    "name": "cehv13.pdf",
-    "date": "\u2014 edit me \u2014",
+    "name": "CEHv13",
+    "date": "11-12-2025",
     "type": "PDF Document",
-    "size": "\u2014 edit me \u2014",
+    "size": "4.44 MB",
+    "platform": "EC-Council",
     "path": "certs/cehv13.pdf"
   },
   {
-    "name": "cc-isc2.pdf",
-    "date": "\u2014 edit me \u2014",
+    "name": "CC",
+    "date": "01-10-2025",
     "type": "PDF Document",
-    "size": "\u2014 edit me \u2014",
+    "size": "215 KB",
+    "platform": "ISC2",
     "path": "certs/cc-isc2.pdf"
   },
   {
-    "name": "cpt.pdf",
-    "date": "\u2014 edit me \u2014",
+    "name": "CPT",
+    "date": "10-08-2024",
     "type": "PDF Document",
-    "size": "\u2014 edit me \u2014",
+    "size": "1.26 MB",
+    "platform": "RedTeam Academy",
     "path": "certs/cpt.pdf"
   }
 ];
@@ -99,6 +102,7 @@ ITEMS.forEach((item) => {
   tile.setAttribute('tabindex', '0');
   tile.innerHTML = `
     <div class="dir-tile-glare"></div>
+     ${item.platform ? `<div class="tile-platform">${item.platform}</div>` : ''}
     <svg class="tile-icon" viewBox="0 0 24 28">
       <path d="M2 1h13l7 7v19H2z"/>
       <path d="M15 1v7h7" fill="none"/>

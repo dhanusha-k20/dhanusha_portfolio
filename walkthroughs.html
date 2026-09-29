@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Walkthroughs — Dhanusha K</title>
+<title>Walkthroughs - Dhanusha K</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -61,24 +61,26 @@
 <script>
 /*
   ===========================================================
-  EDIT THIS LIST — these are demo placeholders. Replace with your real CTF / lab walkthroughs as you write them up.
-  Each entry needs: name, date, type, size, path (where the
+  EDIT THIS LIST - these are demo placeholders. Replace with real CTF / lab walkthroughs.
+  Each entry needs: name, date, type, size, platform, path (where the
   actual PDF will live once you add it).
   ===========================================================
 */
 const ITEMS = [
   {
-    "name": "tryhackme-network-services.pdf",
-    "date": "2026-07-22",
+    "name": "Overheard at Breakfast Writeup.pdf",
+    "date": "17-09-2026",
     "type": "PDF Document",
-    "size": "\u2014",
-    "path": "walkthroughs/tryhackme-network-services.pdf"
+    "size": "1.07 MB",
+    "platform": "TryHackMe",
+    "path": "walkthroughs/Overheard at Breakfast Writeup.pdf"
   },
   {
     "name": "hackthebox-forge-walkthrough.pdf",
     "date": "2026-07-05",
     "type": "PDF Document",
     "size": "\u2014",
+    "platform": "TryHackMe",
     "path": "walkthroughs/hackthebox-forge-walkthrough.pdf"
   },
   {
@@ -86,6 +88,7 @@ const ITEMS = [
     "date": "2026-06-14",
     "type": "PDF Document",
     "size": "\u2014",
+    "platform": "TryHackMe",
     "path": "walkthroughs/portswigger-idor-lab-notes.pdf"
   }
 ];
@@ -99,6 +102,7 @@ ITEMS.forEach((item) => {
   tile.setAttribute('tabindex', '0');
   tile.innerHTML = `
     <div class="dir-tile-glare"></div>
+    ${item.platform ? `<div class="tile-platform">${item.platform}</div>` : ''}
     <svg class="tile-icon" viewBox="0 0 24 28">
       <path d="M2 1h13l7 7v19H2z"/>
       <path d="M15 1v7h7" fill="none"/>

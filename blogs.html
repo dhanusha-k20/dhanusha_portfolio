@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blogs — Dhanusha K</title>
+<title>Blogs - Dhanusha K</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -35,58 +35,56 @@
   </main>
 
   <div class="footerbar">
-    <div class="hint" id="footerHint">3 items &middot; click to open</div>
-  </div>
-
-  <div class="cert-modal" id="certModal" role="dialog" aria-modal="true" aria-label="File viewer">
-    <div class="cert-modal-box">
-      <div class="cert-modal-title">
-        <span id="certModalLabel">FILE</span>
-        <div style="display:flex; align-items:center; gap:14px;">
-          <a id="certModalOpen" href="#" target="_blank" rel="noopener" style="color:var(--grey); text-decoration:none; letter-spacing:1px;">open in new tab &#8599;</a>
-          <button type="button" class="cert-modal-close" id="certModalClose" aria-label="Close">&times;</button>
-        </div>
-      </div>
-      <div class="cert-modal-body">
-        <img id="certModalImg" alt="" style="display:none;">
-        <iframe id="certModalFrame" title="" style="display:none;"></iframe>
-        <div class="cert-modal-fallback" id="certModalFallback">
-          File not added yet.<br>
-          Drop it at <code id="certModalPath"></code> to display it here.
-        </div>
-      </div>
-    </div>
+    <div class="hint" id="footerHint">3 items &middot; click to read</div>
   </div>
 
 <script>
 /*
   ===========================================================
-  EDIT THIS LIST — these are demo placeholders since you haven't published any blog posts yet. Replace with your real posts as you write them.
-  Each entry needs: name, date, type, size, path (where the
-  actual PDF will live once you add it).
+  EDIT THIS LIST - each post is a real HTML page (living in
+  the blogs/ folder)
+
+  To add a new post:
+    1. Duplicate blogs/blog_name.html
+    2. Edit its title/meta/body
+    3. Add a matching entry below pointing at the new file
   ===========================================================
 */
 const ITEMS = [
   {
-    "name": "intro-to-web-app-vapt.pdf",
-    "date": "2026-08-01",
-    "type": "PDF Document",
-    "size": "\u2014",
-    "path": "blogs/intro-to-web-app-vapt.pdf"
+    "name": "Reflected XSS vs. DOM-Based XSS",
+    "date": "05-09-2026",
+    "type": "Article",
+    "size": "8 min read",
+    "path": "blogs/Reflected XSS vs. DOM-Based XSS.html"
   },
   {
-    "name": "understanding-cors-misconfigurations.pdf",
-    "date": "2026-07-18",
-    "type": "PDF Document",
-    "size": "\u2014",
-    "path": "blogs/understanding-cors-misconfigurations.pdf"
+    "name": "Session Fixation vs. Session Replay",
+    "date": "12-09-2026",
+    "type": "Article",
+    "size": "5 min read",
+    "path": "blogs/Session Fixation vs. Session Replay.html"
   },
   {
-    "name": "session-fixation-explained.pdf",
-    "date": "2026-06-30",
-    "type": "PDF Document",
-    "size": "\u2014",
-    "path": "blogs/session-fixation-explained.pdf"
+    "name": "CORS Misconfiguration&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+    "date": "19-09-2026",
+    "type": "Article",
+    "size": "10 min read",
+    "path": "blogs/CORS Misconfiguration.html"
+  },
+  {
+    "name": "CSRF vs. SSRF &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+    "date": "26-09-2026",
+    "type": "Article",
+    "size": "8 min read",
+    "path": "blogs/CSRF vs. SSRF.html"
+  },
+  {
+    "name": "Cache Poisoning &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+    "date": "03-10-2026",
+    "type": "Article",
+    "size": "Coming soon",
+    "path": "blogs/CORS Misconfiguration.html"
   }
 ];
 
@@ -109,9 +107,9 @@ ITEMS.forEach((item) => {
       <span>${item.size}</span>
     </div>
   `;
-  tile.addEventListener('click', () => openFile(item));
+  tile.addEventListener('click', () => { window.location.href = item.path; });
   tile.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') openFile(item);
+    if (e.key === 'Enter' || e.key === ' ') window.location.href = item.path;
   });
 
   // subtle 3D tilt following the cursor
@@ -130,59 +128,6 @@ ITEMS.forEach((item) => {
   });
 
   dirTiles.appendChild(tile);
-});
-
-const certModal = document.getElementById('certModal');
-const certModalImg = document.getElementById('certModalImg');
-const certModalFrame = document.getElementById('certModalFrame');
-const certModalFallback = document.getElementById('certModalFallback');
-const certModalPath = document.getElementById('certModalPath');
-const certModalLabel = document.getElementById('certModalLabel');
-const certModalClose = document.getElementById('certModalClose');
-const certModalOpen = document.getElementById('certModalOpen');
-
-function openFile(item){
-  certModalLabel.textContent = item.name.toUpperCase();
-  certModalPath.textContent = item.path;
-  if (certModalOpen) certModalOpen.href = item.path;
-  certModalImg.style.display = 'none';
-  certModalFrame.style.display = 'none';
-  certModalFallback.style.display = 'none';
-
-  const isPdf = item.path.toLowerCase().endsWith('.pdf');
-
-  if (isPdf){
-    certModalFrame.onload = () => { certModalFrame.style.display = 'block'; };
-    certModalFrame.src = item.path;
-    certModalFrame.style.display = 'block';
-  } else {
-    certModalImg.onload = () => { certModalImg.style.display = 'block'; };
-    certModalImg.onerror = () => {
-      certModalImg.style.display = 'none';
-      certModalFallback.style.display = 'block';
-    };
-    certModalImg.alt = item.name;
-    certModalImg.src = item.path;
-  }
-
-  certModal.classList.add('open');
-  certModalClose.focus();
-}
-
-function closeCert(){
-  certModal.classList.remove('open');
-  certModalImg.src = '';
-  certModalFrame.src = '';
-}
-
-if (certModalClose) certModalClose.addEventListener('click', closeCert);
-if (certModal){
-  certModal.addEventListener('click', (e) => {
-    if (e.target === certModal) closeCert();
-  });
-}
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && certModal.classList.contains('open')) closeCert();
 });
 
 document.querySelectorAll('.topbar nav a[href="#"]').forEach(a => {

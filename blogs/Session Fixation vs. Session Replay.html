@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session Fixation vs. Session Replay - Dhanusha K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="path">~/dhanusha-k<span>/explore/blogs</span></div>
+    <nav>
+      <a href="../index.html">Home</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#explore" class="active">Explore</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </div>
+
+  <div class="bg-grid"></div>
+  <div class="global-scan"></div>
+
+  <main class="article-page">
+    <div class="article-container">
+
+      <a href="../blogs.html" class="article-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+        back to blogs
+      </a>
+
+      <h1 class="article-title">Session Fixation vs. Session Replay: Two Ways an Old Session ID Can Ruin Your Day</h1>
+      <div class="article-meta">
+        <span>Dhanusha K</span>
+        <span class="dot">&middot;</span>
+        <span>Sept 12, 2026</span>
+        <span class="dot">&middot;</span>
+        <span>5 min read</span>
+      </div>
+
+      <!--
+        ===========================================================
+        EDIT THE ARTICLE HERE
+        ===========================================================
+      -->
+      <div class="article-body">
+
+        <p>Picture this: you're testing a login flow, you grab a session token before authentication, and somehow that same token is still valid after the user logs in. Bug found - but which bug is it? This is one of those pairs that gets flagged interchangeably in draft reports until someone asks "wait, is this fixation or replay?" and the room goes quiet for a second.</p>
+
+        <p>They're not the same vulnerability. They're not even really testing the same weakness. But they both revolve around one idea - <strong>the application isn't treating session IDs as something that should die and be reborn at the right moments</strong> - so it's easy to see how the lines blur.</p>
+
+        <h2>Start With What They Actually Have in Common</h2>
+        <p>Both bugs involve a session token that outlives the moment it should have expired. Both let an attacker end up in control of, or riding along on, a session that belongs to someone else. And in both cases, your proof-of-concept ends the same way: two browser tabs, one session ID, one very awkward "wait, I'm logged in as the victim now" moment.</p>
+        
+        <p>That shared ending is exactly why they get confused. The difference is entirely in <strong>how you got there.</strong></p>
+
+        <h2>Session Fixation: You Hand the Victim a Trap Before They Even Log In</h2>
+        <p>This one starts before authentication. The attacker sets or obtains a valid, pre-authentication session ID and tricks the victim into using it - usually by sending a link with the session token baked into the URL, or by planting it via a cookie if the app allows that.</p>
+        
+        <p>The critical flaw: <strong>the application doesn't issue a new session ID after the victim logs in.</strong> It just takes the pre-existing session, silently upgrades it to an authenticated one, and carries on. The attacker, who already knew that session ID from the start, now shares an authenticated session with the victim without ever having to steal anything mid-flight.</p>
+        <h2>How you actually confirm it in testing:</h2>
+
+        <ol>
+          <li>Grab a session ID/cookie before logging in (an unauthenticated session).</li>
+          <li>Log in normally using that same session.</li>
+          <li>Check whether the session ID changed post-authentication.</li>
+          <li>If it's identical pre- and post-login, you have fixation - the attacker's session ID silently became a valid, authenticated one.</li>
+        </ol>
+
+        <p>It's fundamentally a bug in <strong>session ID lifecycle management at the login boundary.</strong></p>
+        <h2>Session Replay: You Reuse a Session That Should Already Be Dead</h2>
+        <p>Replay is a different story entirely. There's no "planting" involved - the attacker simply captures a session ID that was valid at some point (via network sniffing, a stored request, a proxy log, browser history, whatever) and reuses it later, after the point where it should have been invalidated.</p>
+        
+        <p>The critical flaw here: <strong>the server doesn't actually kill the session when it should</strong> - after logout, after a password change, after a defined expiry window, or after the user closes the browser without an explicit logout. The session ID technically still works because the backend never bothered to invalidate it server-side.</p>
+        <h2>How you actually confirm it in testing:</h2>
+        <ol>
+          <li>Capture a valid, authenticated session ID (e.g., from a Burp history entry or proxy log).</li>
+          <li>Perform the action that should kill it - log out, wait past the stated timeout, change the password.</li>
+          <li>Replay the old request using the captured session ID.</li>
+          <li>If the server still honors it and serves an authenticated response, that session was never actually invalidated. That's replay.</li>
+        </ol>
+
+        <p>It's fundamentally a bug in session termination and expiry enforcement, not the login boundary at all.</p>
+
+        <h2>The Distinction That Actually Matters When You're Testing</h2>
+        <p>Ask yourself one question and the confusion mostly disappears:</p>
+        
+        <p><strong>Did the session ID exist before login and get reused across the authentication boundary (fixation)? Or did a session that was already authenticated get reused after it should have expired or been killed (replay)?</strong></p>
+
+        <p>Fixation is about the moment of login. Replay is about the moment of termination. Same "old token still works" symptom, opposite ends of the session's lifecycle.</p>
+
+        <p>One more practical tell: fixation usually requires the attacker to interact with the victim beforehand (send them a link, plant a cookie) - there's a social engineering step. Replay just requires the attacker to have seen a valid session ID at some point; no interaction with the victim is needed at all, which is part of why it's the one people tend to underestimate in impact.</p>
+
+        <h2>Why Your Report Needs to Get This Right</h2>
+        <p>Same story as always - the fix is different depending on which one you found:</p>
+        <ul>
+          <li><strong>Fixation</strong> gets fixed by regenerating the session ID at the moment of authentication, every single time, regardless of whether a session already existed.</li>
+          <li><strong>Replay</strong> gets fixed by properly invalidating sessions server-side on logout, enforcing real expiry windows, and ideally binding sessions to something like IP/user-agent context so a stolen token is harder to reuse cleanly.</li>
+        </ul>
+
+        <p>Recommend "regenerate session ID on login" for a replay bug and the dev team will patch a boundary that was never the actual problem - the old session will still be sitting there, perfectly valid, waiting to be replayed.</p>
+
+        <blockquote><strong>Bottom Line</strong>
+          <p>Fixation: the attacker gives the victim a session ID before login, and it survives into an authenticated state.<br>Replay: the attacker reuses a session ID after it should have expired or been killed, and the server doesn't check.</p>
+        </blockquote>
+
+        <p>Different bug, different fix, same underlying lesson - session IDs need a clear birth and a clear death, and most of these vulnerabilities are just the app fumbling one or the other.</p>
+
+      </div>
+
+      <div class="article-tags">
+        <span class="tag" style="cursor:default;">session id</span>
+        <span class="tag" style="cursor:default;">Pentesting</span>
+        <span class="tag" style="cursor:default;">Fixation</span>
+        <span class="tag" style="cursor:default;">Replay</span>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="footerbar">
+    <div class="hint">thanks for reading</div>
+  </div>
+
+</body>
+</html>

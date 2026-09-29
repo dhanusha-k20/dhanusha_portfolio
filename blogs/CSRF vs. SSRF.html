@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSRF vs. SSRF - Dhanusha K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="path">~/dhanusha-k<span>/explore/blogs</span></div>
+    <nav>
+      <a href="../index.html">Home</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#explore" class="active">Explore</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </div>
+
+  <div class="bg-grid"></div>
+  <div class="global-scan"></div>
+
+  <main class="article-page">
+    <div class="article-container">
+
+      <a href="../blogs.html" class="article-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+        back to blogs
+      </a>
+
+      <h1 class="article-title">CSRF vs. SSRF: Same Four Letters, Completely Different Attacks</h1>
+      <div class="article-meta">
+        <span>Dhanusha K</span>
+        <span class="dot">&middot;</span>
+        <span>Sept 26, 2026</span>
+        <span class="dot">&middot;</span>
+        <span>8 min read</span>
+      </div>
+
+      <!--
+        ===========================================================
+        EDIT THE ARTICLE HERE
+        ===========================================================
+      -->
+      <div class="article-body">
+
+        <p>Every so often someone in a report review meeting says "wait, is this the CSRF one or the SSRF one?" It's a fair mix-up - the acronyms are one letter apart, they both get thrown around in the same "web app vulnerabilities" breath, and both have "forgery" energy to them. But that's genuinely where the similarity ends. Once you look at who's doing the forging and where the request is actually going, they're not even in the same neighborhood.</p>
+
+        <p>Let's untangle them properly.</p>
+
+        <blockquote><strong>The One-Sentence Version First</strong><br>
+        CSRF: the victim's browser is tricked into sending a request it didn't mean to send.<br>
+        SSRF: the server is tricked into sending a request it shouldn't be able to send.  </blockquote>
+        
+        <p>That's really the whole difference. Everything else is detail. But let's get into the detail, because the detail is where the good findings live.</p>
+
+        <h2>CSRF: Weaponizing the Victim's Own Browser</h2>
+        <p>CSRF (Cross-Site Request Forgery) abuses one simple fact: browsers attach cookies to requests automatically, regardless of which site technically triggered the request. If a victim is logged into <code>bank.com</code> and then visits a malicious page, that malicious page can quietly fire off a request to <code>bank.com</code> - and the browser, being helpful, tags along the victim's session cookie without asking anyone's permission.</p>
+        
+        <h2>What it actually looks like:</h2>
+
+        <pre><code><span class="tok-com"><!-- Sitting on attacker-site.com, waiting for a logged-in victim to visit --></span><br>
+          &lt;<span class="tok-kw">form action</span>=<span class="tok-str">"https://bank.com/transfer"</span> <span class="tok-kw">method</span>=<span class="tok-str">"POST"</span> <span class="tok-kw">id</span>=<span class="tok-str">"f"</span>&gt;<br>
+          &lt;<span class="tok-kw">input type</span>=<span class="tok-str">"hidden"</span> <span class="tok-kw">name</span>=<span class="tok-str">"to"</span> <span class="tok-kw">value</span>=<span class="tok-str">"attacker-account"</span>&gt;
+          &lt;<span class="tok-kw">input type</span>=<span class="tok-str">"hidden"</span> <span class="tok-kw">name</span>=<span class="tok-str">"amount"</span> <span class="tok-kw">value</span>=<span class="tok-str">"5000"</span>&gt;<br>
+        &lt;/<span class="tok-kw">form</span>&gt;<br>
+        &lt;<span class="tok-kw">script</span>&gt;document.<span class="tok-fn">getElementById</span>(<span class="tok-str">'f'</span>).<span class="tok-fn">submit</span>();&lt;/<span class="tok-kw">script</span>&gt;</code></pre>
+
+        <p>The victim clicks a link, this fires silently, and if <code>bank.com</code> isn't checking for a CSRF token or verifying the request's origin, the transfer just... happens. The victim's browser did all the talking. The server has no way to tell "the user clicked a button on our actual site" apart from "some other page made the browser do this," because the cookie looks identical either way.</p>
+
+        <p><strong>The core weakness:</strong> the server trusts the session cookie as proof of intent, without verifying that the request actually originated from a legitimate action on the legitimate site.</p>
+        <p><strong>How you test for it:</strong> strip out or tamper with the CSRF token in a sensitive request (password change, fund transfer, email update), replay it, and see if the server still processes it. If yes - and there's no other origin-verification happening - you've got CSRF.</p>
+
+        <h2>SSRF: Weaponizing the Server's Ability to Make Requests</h2>
+        <p>SSRF (Server-Side Request Forgery) is a completely different animal. Here, there's no victim browser involved at all. Instead, you find a feature where the server itself makes outbound HTTP requests based on user-supplied input - a "fetch image from URL," a webhook setup, a PDF-generator that loads a URL, a URL preview feature, anything like that - and you abuse it to make the server request somewhere it was never meant to reach.</p>
+
+        <h2>What it actually looks like:</h2>
+        <pre><code>POST /api/fetch-avatar<br>{
+        "image_url": "http://169.254.169.254/latest/meta-data/iam/security-credentials/"<br>}</code></pre>
+
+        <p>That IP - <code>169.254.169.254</code> - isn't random. It's the cloud metadata endpoint (AWS, and similar addresses exist for Azure/GCP), and it's only reachable from inside the server's own network. Your browser can never reach it. But if the server-side code blindly fetches whatever URL you hand it, you've just turned the application's own backend into your personal proxy into its internal network - potentially walking out with cloud credentials, hitting internal admin panels, or scanning internal infrastructure that's normally firewalled off from the outside world entirely.</p>
+        <p><strong>The core weakness:</strong> the server trusts user-supplied URLs/hostnames as safe destinations to fetch, without restricting what internal or unexpected destinations that request could actually reach.</p>
+        <p><strong>How you test for it:</strong> find any feature that takes a URL as input and causes server-side fetching, then point it at internal IP ranges (<code>127.0.0.1</code>, <code>169.254.169.254</code>, <code>10.x.x.x</code>, <code>192.168.x.x</code>), a Burp Collaborator/interactsh listener to confirm out-of-band interaction, and see what comes back or what callback you catch.</p>
+
+        <h2>Putting Them Side by Side</h2>
+        <p>The real "aha" moment is this: <strong>CSRF makes someone else's browser attack a server on the victim's behalf. SSRF makes the server attack itself (or its internal network) on the attacker's behalf.</strong> The forgery in CSRF happens in the victim's browser. The forgery in SSRF happens inside the server's own request logic. Nobody's browser needs to be tricked for SSRF to work - the attacker talks directly to the vulnerable endpoint.</p>
+        <p>One more thing that trips people up: <strong>CSRF needs a victim.</strong> No victim visits the malicious page, no attack happens. <strong>SSRF needs no victim at all</strong> - you, the attacker, interact with the vulnerable server directly and it does the dirty work itself. That's honestly the fastest way to mentally sort the two when you're staring at a finding and blanking on which is which.</p>
+
+        <h2>Why Mixing These Up in a Report Is a Bad Day</h2>
+        <p>Get this wrong in a write-up and you'll send a dev team looking for a CSRF token when the actual bug is unrestricted server-side URL fetching, or vice versa - and the fix couldn't be more different:</p>
+
+        <ul>
+          <li><strong>CSRF</strong> gets fixed with anti-CSRF tokens, <code>SameSite</code> cookie attributes, and origin/referer validation.</li>
+          <li><strong>SSRF</strong> gets fixed with strict allowlisting of destinations the server is permitted to fetch, blocking requests to internal/private IP ranges, and disabling unnecessary URL-fetching features entirely where possible.</li>
+        </ul>
+
+        <p>Tell a team to "add a CSRF token" for an SSRF finding and they'll add a token that does absolutely nothing to stop the server from still reaching <code>169.254.169.254</code> on request. The bug survives the "fix."</p>
+
+        <h2>The Takeaway</h2>
+        <p>Don't let the acronym similarity fool you into treating these as siblings - they're not. CSRF is about <strong>borrowing a victim's trusted identity through their browser.</strong> SSRF is about <strong>borrowing the server's trusted network position.</strong> Different attacker, different victim, different mechanism, different fix. The only thing they genuinely share is a name that's one swapped letter away from causing a very avoidable mix-up in your next report.</p>
+
+      </div>
+
+      <div class="article-tags">
+        <span class="tag" style="cursor:default;">Pentesting</span>
+        <span class="tag" style="cursor:default;">CSRF</span>
+        <span class="tag" style="cursor:default;">SSRF</span>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="footerbar">
+    <div class="hint">thanks for reading</div>
+  </div>
+
+</body>
+</html>

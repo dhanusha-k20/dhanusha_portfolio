@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflected XSS vs. DOM-Based XSS - Dhanusha K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="path">~/dhanusha-k<span>/explore/blogs</span></div>
+    <nav>
+      <a href="../index.html">Home</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#explore" class="active">Explore</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </div>
+
+  <div class="bg-grid"></div>
+  <div class="global-scan"></div>
+
+  <main class="article-page">
+    <div class="article-container">
+
+      <a href="../blogs.html" class="article-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+        back to blogs
+      </a>
+
+      <h1 class="article-title">Reflected XSS vs. DOM-Based XSS: Why They Trip Up Even Experienced Testers</h1>
+      <div class="article-meta">
+        <span>Dhanusha K</span>
+        <span class="dot">&middot;</span>
+        <span>Sept 5, 2026</span>
+        <span class="dot">&middot;</span>
+        <span>8 min read</span>
+      </div>
+
+      <!--
+        ===========================================================
+        EDIT THE ARTICLE HERE
+        ===========================================================
+      -->
+      <div class="article-body">
+
+        <p>If you've spent any time doing web app VAPT, you've probably had this moment: you find an XSS, you go to classify it, and you pause. Is this reflected, or is this DOM-based? On the surface, they look almost identical - a payload goes in, a script executes, an alert box pops up. But under the hood, they're completely different animals, and mixing them up in a report is the kind of thing that gets flagged in a technical review.</p>
+
+        <p>Let's break down why they look the same, and how to actually tell them apart.</p>
+
+        <h2>Why They Feel So Similar</h2>
+        <p>Both vulnerabilities:</p>
+        <ul>
+          <li>Are triggered by attacker-controlled input (usually a URL parameter)</li>
+          <li>Result in JavaScript execution in the victim's browser</li>
+          <li>Are typically delivered via a crafted link sent to the victim</li>
+          <li>Show up in your proof-of-concept the exact same way:<code>&lt;script&gt;alert(document.cookie)&lt;/script&gt;</code> popping a box</li>
+        </ul>
+        <p>If you're just eyeballing the PoC, both look like "I put a script tag in the URL and it ran." That's exactly why testers new to the space (and honestly, some experienced ones on a rushed engagement) lump them together. The difference isn't in what you see - it's in how the payload actually gets executed.</p>
+
+        <h2>Reflected XSS: The Server Is Involved</h2>
+        <p>In reflected XSS, your payload takes a round trip through the server. You send a request, the server takes your input, embeds it directly into the HTML response without sanitizing it, and sends that back to the browser. The browser just renders whatever it's told - it has no idea it's rendering something malicious.</p>
+        
+        <h2>Example flow:</h2>
+
+        <pre><code>Request: GET /search?q=&lt;script&gt;alert(1)&lt;/script&gt;
+          Server:  "You searched for: &lt;script&gt;alert(1)&lt;/script&gt;" ← reflected straight into the HTML
+          Browser: Parses the HTML, sees a &lt;script&gt; tag, executes it</code></pre>
+
+        <p>The key tell: <strong>if you view-source or check the raw HTTP response, your payload is sitting right there in the server's response.</strong> The server processed it and reflected it back.</p>
+
+        <h2>DOM-Based XSS: The Server Is Never Involved</h2>
+        <p>DOM-based XSS never touches the server at all. The vulnerability lives entirely in <strong>client-side JavaScript</strong> that reads data from somewhere (usually <code>location.href</code>, <code>document.URL</code>, <code>document.referrer</code>, or the URL fragment after a <code>#</code>) and writes it into the page using something dangerous like <code>innerHTML</code>, <code>document.write()</code>, or <code>eval()</code> - without sanitizing it first.</p>
+
+        <h2>Example flow:</h2>
+
+        <pre><code>URL:     https://example.com/page#name=&lt;img src=x onerror=alert(1)&gt;
+          Server:  Never sees the fragment after # - it's not even sent in the HTTP request
+          JS:      var name = location.hash.substring(6); document.getElementById('greeting').innerHTML = "Hello, " + name;
+          Browser: JS pulls the payload straight from the URL and injects it into the DOM</code></pre>
+
+        <p>The key tell: <strong>if you check the raw HTTP response from the server, your payload is nowhere in it.</strong> The server literally never saw it. Everything happened client-side, in the browser, after the page loaded.</p>
+
+        <h2>The Quick Mental Model</h2>
+
+        <table>
+          <tr><th></th><th>Reflected XSS</th><th>DOM-Based XSS</th></tr>
+          <tr><td>Who processes the payload</td><td>Server</td><td>Client-side JavaScript</td></tr>
+          <tr><td>Where's the payload in the response?</td><td>Present in the raw HTTP response</td><td>Absent from the raw HTTP response</td></tr>
+          <tr><td>Common source</td><td>URL query parameters</td><td><code>location.hash</code>, <code>location.search</code>, <code>document.referrer</span></code> read via JS</td></tr>
+          <tr><td>Common sink</td><td>Server-side template embedding input into HTML</td><td><code>innerHTML</code>, <code>document.write</code>, <code>eval</code>, <code>setTimeout</code> with a string</td></tr>
+          <tr><td>Where you'd find the bug</td><td>Server-side code / template rendering</td><td>Client-side JS files (view-source, JS debugger)</td></tr>
+        </table>
+
+        <h2>How to Actually Tell Them Apart While Testing</h2>
+
+        <p>This is the part that matters in practice - a repeatable check, not a guess:</p>
+        <ol>
+          <li><strong>Send your payload, then view the raw HTTP response</strong> (Burp's response tab, not the rendered page). If your exact payload is sitting in the response body, it's reflected.</li>
+          <li><strong>it's not in the response</strong>, but the script still executes - open dev tools, check the Sources/Debugger tab, and trace where the DOM is being modified. Look for <code>innerHTML</code>, <code>document.write</code>, <code>eval</code>, or similar sinks reading from <code>location.hash</code> / <code>location.search</code>.</li>
+          <li><strong>Fragment-only payloads (<code>#</code>) are a strong DOM-based signal</strong> - anything after <code>#</code> in a URL never gets sent to the server in the first place, so if execution still happens, it has to be client-side JS doing the work.</li>
+          <li><strong>Check the JS source directly.</strong> With DOM XSS, grep the page's JS for <code>location.hash</code>, <code>location.search</code>, <code>document.URL</code>, or <code>document.referrer</code> feeding into <code>innerHTML</code>/<code>eval</code>/<code>document.write</code>. That's your source-to-sink chain, and it's what you'll actually put in your report.</li>
+        </ol>
+
+        <h2>Why the Distinction Actually Matters in a Report</h2>
+
+        <p>It's not just pedantry - the remediation is different:</p>
+        <ul>
+          <li><strong>Reflected XSS</strong>gets fixed server-side: proper output encoding/escaping wherever user input is embedded into HTML (context-aware encoding, not a blanket filter).</li>
+          <li><strong>DOM-based XSS</strong>gets fixed client-side: safe DOM APIs (<code>textContent</code> instead of <code>innerHTML</code>), sanitization libraries like DOMPurify before any dynamic HTML insertion, and avoiding <code>eval</code>/<code>document.write</code> on untrusted data entirely.</li>
+        </ul>
+
+        <p>If you tell a dev team to "fix the server-side encoding" for a bug that's actually happening in client-side JS, they'll patch the wrong layer, retest will still fail, and you'll be the one explaining why.</p>
+        <blockquote><strong>The One-Line Takeaway</strong>
+          <p>Reflected XSS = the server hands the browser a booby-trapped page.<br>DOM-based XSS = the browser builds the booby trap itself, from data the server never even saw.</p>
+        </blockquote>
+        <p>Same explosion, different wiring.</p>
+
+      </div>
+
+      <div class="article-tags">
+        <span class="tag" style="cursor:default;">Web App VAPT</span>
+        <span class="tag" style="cursor:default;">Pentesting</span>
+        <span class="tag" style="cursor:default;">XSS</span>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="footerbar">
+    <div class="hint">thanks for reading</div>
+  </div>
+
+</body>
+</html>

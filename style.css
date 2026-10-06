@@ -935,6 +935,7 @@ body{
 }
 .article-body code{
   font-family:'JetBrains Mono', monospace;
+  font-variant-ligatures: none;
   font-size:14.5px;
   background:rgba(228,32,42,0.09);
   color:var(--red);
@@ -943,6 +944,7 @@ body{
 }
 .article-body pre{
   font-family:'JetBrains Mono', monospace;
+  font-variant-ligatures: none;
   font-size:13px;
   line-height:1.65;
   background:var(--bg-deep);
@@ -1006,3 +1008,187 @@ body{
 .article-body .tok-str{color:#4FA64E} /*string literals*/
 .article-body .tok-sym{color:#AF5DD8} /*symbols, conditions*/
 .article-body .tok-com{color:var(--grey);font-style:italic} /*Comments*/
+
+/* ===========================================================
+   CREDENTIALS PAGE - two-screen scroll-linked layout
+   (stats counters, then profile/degree/sectors/tools)
+   =========================================================== */
+.cred-scene{ position:relative; height:calc(100vh + 100vh); }
+.cred-stage{ position:sticky; top:0; height:100vh; overflow:hidden; }
+.cred-layer{ position:absolute; inset:0; will-change:transform, opacity; }
+.cred-layer-stats{ z-index:1; }
+.cred-layer-profile{ z-index:2; }
+
+.cred-screen{
+  position:relative;
+  z-index:2;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:32px;
+  padding:110px 24px 100px;
+  text-align:center;
+}
+
+.cred-heading{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:700;
+  font-size:clamp(32px, 5vw, 60px);
+  letter-spacing:-1px;
+  color:var(--ink);
+}
+.cred-heading .slash{ color:var(--red); }
+
+/* ---------- screen 1: stats panel ---------- */
+.cred-stats-panel{
+  width:100%;
+  max-width:820px;
+  background:linear-gradient(135deg, #1a1012 0%, #2a0d10 55%, var(--red-deep) 140%);
+  border:1px solid rgba(228,32,42,0.3);
+  border-radius:20px;
+  padding:clamp(30px, 4vw, 48px);
+  box-shadow:0 18px 40px rgba(0,0,0,0.4);
+}
+.cred-stats-title{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:700;
+  font-size:clamp(22px, 3vw, 32px);
+  color:var(--ink);
+  margin-bottom:clamp(28px, 5vw, 46px);
+}
+.cred-stats-grid{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:28px;
+}
+.cred-stat{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+.cred-stat-value{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:700;
+  font-size:clamp(36px, 5.5vw, 56px);
+  color:#ffffff;
+  line-height:1;
+}
+.cred-stat-value .suffix{ color:var(--red-glow); }
+.cred-stat-label{
+  font-family:'JetBrains Mono', monospace;
+  font-size:12px;
+  letter-spacing:0.5px;
+  color:rgba(242,241,236,0.7);
+  text-align:center;
+}
+
+/* ---------- screen 2: profile panel ---------- */
+.cred-profile-panel{
+  width:100%;
+  max-width:820px;
+  background:var(--panel-grey);
+  border:1px solid rgba(228,32,42,0.15);
+  border-radius:20px;
+  padding:clamp(28px, 4vw, 40px);
+  display:flex;
+  flex-direction:column;
+  gap:30px;
+  text-align:left;
+
+  /* content (degree + sectors + ~10 tool pills) can run taller than
+     one screen - scroll inside the panel instead of letting the
+     pinned stage clip it off */
+  max-height:min(560px, calc(100vh - 260px));
+  overflow-y:auto;
+  scrollbar-width:thin;
+  scrollbar-color:var(--red-deep) transparent;
+}
+.cred-profile-panel::-webkit-scrollbar{ width:6px; }
+.cred-profile-panel::-webkit-scrollbar-track{ background:transparent; }
+.cred-profile-panel::-webkit-scrollbar-thumb{
+  background:var(--red-deep);
+  border-radius:3px;
+}
+.cred-profile-panel::-webkit-scrollbar-thumb:hover{ background:var(--red); }
+
+.cred-row{
+  display:flex;
+  gap:18px;
+  padding-bottom:28px;
+  border-bottom:1px solid var(--line);
+}
+.cred-row:last-child{ border-bottom:none; padding-bottom:4px; }
+
+.cred-row-icon{
+  flex:none;
+  width:40px; height:40px;
+  border-radius:50%;
+  background:rgba(228,32,42,0.1);
+  border:1px solid rgba(228,32,42,0.3);
+  color:var(--red);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.cred-row-icon svg{ width:19px; height:19px; }
+
+.cred-row-body{ flex:1; min-width:0; }
+.cred-row-title{
+  font-family:'Space Grotesk', sans-serif;
+  font-weight:700;
+  font-size:17px;
+  color:var(--ink);
+  margin-bottom:6px;
+}
+.cred-row-desc{
+  font-size:12.5px;
+  line-height:1.6;
+  color:var(--grey);
+  margin-bottom:14px;
+}
+
+.cred-pills{ display:flex; flex-wrap:wrap; gap:9px; }
+.cred-pill{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.5px;
+  color:var(--grey);
+  border:1px solid rgba(228,32,42,0.25);
+  background:rgba(228,32,42,0.05);
+  padding:6px 12px;
+  border-radius:20px;
+  white-space:nowrap;
+}
+
+.cred-cert-tile{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  width:fit-content;
+  max-width:100%;
+  border:1px solid rgba(228,32,42,0.25);
+  background:rgba(228,32,42,0.04);
+  padding:12px 16px;
+  border-radius:8px;
+  cursor:pointer;
+  transition:border-color .2s ease, background .2s ease;
+}
+.cred-cert-tile:hover, .cred-cert-tile:focus-visible{
+  border-color:var(--red);
+  background:rgba(228,32,42,0.12);
+}
+.cred-cert-tile:focus-visible{ outline:1px solid var(--red-glow); outline-offset:3px; }
+.cred-cert-tile svg{
+  flex:none;
+  width:22px; height:26px;
+  fill:rgba(228,32,42,0.12);
+  stroke:var(--red);
+  stroke-width:1.4;
+}
+.cred-cert-name{ font-size:12.5px; color:var(--ink); word-break:break-word; }
+.cred-cert-sub{ font-size:10.5px; color:var(--grey); margin-top:3px; }
+
+@media (max-width:700px){
+  .cred-screen{ padding:100px 20px 90px; gap:24px; }
+  .cred-stats-grid{ grid-template-columns:1fr; gap:20px; }
+  .cred-profile-panel{ padding:22px 18px; gap:22px; max-height:min(520px, calc(100vh - 220px)); }
+  .cred-row{ flex-direction:column; gap:12px; }
+}

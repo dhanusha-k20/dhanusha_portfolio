@@ -62,11 +62,11 @@
         
         <h2>What it actually looks like:</h2>
 
-        <pre><code><span class="tok-com"><!-- Sitting on attacker-site.com, waiting for a logged-in victim to visit --></span><br>
-          &lt;<span class="tok-kw">form action</span>=<span class="tok-str">"https://bank.com/transfer"</span> <span class="tok-kw">method</span>=<span class="tok-str">"POST"</span> <span class="tok-kw">id</span>=<span class="tok-str">"f"</span>&gt;<br>
+        <pre><code><span class="tok-com">&lt;!-- Sitting on attacker-site.com, waiting for a logged-in victim to visit --&gt;</span>
+        &lt;<span class="tok-kw">form action</span>=<span class="tok-str">"https://bank.com/transfer"</span> <span class="tok-kw">method</span>=<span class="tok-str">"POST"</span> <span class="tok-kw">id</span>=<span class="tok-str">"f"</span>&gt;
           &lt;<span class="tok-kw">input type</span>=<span class="tok-str">"hidden"</span> <span class="tok-kw">name</span>=<span class="tok-str">"to"</span> <span class="tok-kw">value</span>=<span class="tok-str">"attacker-account"</span>&gt;
-          &lt;<span class="tok-kw">input type</span>=<span class="tok-str">"hidden"</span> <span class="tok-kw">name</span>=<span class="tok-str">"amount"</span> <span class="tok-kw">value</span>=<span class="tok-str">"5000"</span>&gt;<br>
-        &lt;/<span class="tok-kw">form</span>&gt;<br>
+          &lt;<span class="tok-kw">input type</span>=<span class="tok-str">"hidden"</span> <span class="tok-kw">name</span>=<span class="tok-str">"amount"</span> <span class="tok-kw">value</span>=<span class="tok-str">"5000"</span>&gt;
+        &lt;/<span class="tok-kw">form</span>&gt;
         &lt;<span class="tok-kw">script</span>&gt;document.<span class="tok-fn">getElementById</span>(<span class="tok-str">'f'</span>).<span class="tok-fn">submit</span>();&lt;/<span class="tok-kw">script</span>&gt;</code></pre>
 
         <p>The victim clicks a link, this fires silently, and if <code>bank.com</code> isn't checking for a CSRF token or verifying the request's origin, the transfer just... happens. The victim's browser did all the talking. The server has no way to tell "the user clicked a button on our actual site" apart from "some other page made the browser do this," because the cookie looks identical either way.</p>

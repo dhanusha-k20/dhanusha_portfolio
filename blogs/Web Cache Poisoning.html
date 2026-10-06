@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Cache Poisoning - Dhanusha K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="path">~/dhanusha-k<span>/explore/blogs</span></div>
+    <nav>
+      <a href="../index.html">Home</a>
+      <a href="../index.html#about">About</a>
+      <a href="../index.html#explore" class="active">Explore</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </div>
+
+  <div class="bg-grid"></div>
+  <div class="global-scan"></div>
+
+  <main class="article-page">
+    <div class="article-container">
+
+      <a href="../blogs.html" class="article-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+        back to blogs
+      </a>
+
+      <h1 class="article-title">Web Cache Poisoning: How One Bad Response Becomes Everyone's Problem</h1>
+      <div class="article-meta">
+        <span>Dhanusha K</span>
+        <span class="dot">&middot;</span>
+        <span>Oct 03, 2026</span>
+        <span class="dot">&middot;</span>
+        <span>10 min read</span>
+      </div>
+
+      <!--
+        ===========================================================
+        EDIT THE ARTICLE HERE
+        ===========================================================
+      -->
+      <div class="article-body">
+
+        <p>Most XSS bugs hit one victim at a time. You craft a link, you send it, you hope they click. Cache poisoning is different. <strong>You poison the response once, and the server serves it to everyone, for you.</strong></p>
+
+        <p>Think of it as the difference between handing out a fake flyer to one person and sneaking it onto the notice board that everyone reads.</p>
+
+        <h2>Start With the Analogy: The Busy Café</h2>
+        <p>Imagine a café with one barista and a long queue. Customers keep ordering the same "Latte, medium." Making each one from scratch is slow, so the barista starts keeping a few pre-made lattes on the counter. If someone orders a medium latte, they grab one from the counter. It's fast, and the barista is happy.</p>
+        <p>That counter is the <strong>cache</strong>. The barista is your <strong>origin server</strong>. A CDN like Cloudflare, Akamai, or Fastly is just a very big counter in front of the kitchen.</p>
+        <p>Now the attack: someone sneaks up and slips something nasty into one of those pre-made lattes. The barista doesn't notice, because they think every latte on the counter is trustworthy. Every customer who orders a medium latte now gets the bad one.</p>
+        <p>That's web cache poisoning.</p>
+
+        <h2>The Core Concept: The Cache Key</h2>
+        <p>A cache needs a way to decide: <i>"Is this new request the same as one I've already answered?"</i></p>
+        <p>It does this by building a cache key from a few parts of the request, typically:</p>
+        <ul>
+          <li>The request method (<code>GET</code>)</li>
+          <li>The path (<code>/home</code>)</li>
+          <li>The query string (<code>?lang=en</code>)</li>
+          <li>The <code>Host</code> header</li>
+        </ul>
+
+        <p>If two requests produce the same cache key, the cache says "I've seen this one" and serves the saved response.</p>
+        <p>Everything in the request that is <strong>not</strong> part of the cache key is called an <strong>unkeyed input</strong>. The cache ignores it when matching, but the server may still use it when building the response.</p>
+
+        <blockquote><strong>The whole attack lives in that gap:</strong> an input that changes the response but isn't part of the cache key.</blockquote>
+
+        <h2>The Recipe: Poisoning in Two Steps</h2>
+        <p>Every cache poisoning attack follows the same pattern:</p>
+        <ol>
+          <li><strong>Find an unkeyed input</strong> that influences the response.</li>
+          <li><strong>Get the cache to store your poisoned version</strong>, so normal users receive it.</li>
+        </ol>
+
+        <h2>A Worked Example</h2>
+        <p>Say you're testing a site that builds absolute URLs for its scripts using the <code>X-Forwarded-Host</code> header (a common behavior behind proxies):</p>
+
+        <pre><code>GET /home HTTP/1.1<br>Host: shop.example.com<br>X-Forwarded-Host: evil.com</code></pre>
+        <p>The server replies with:</p>
+        <pre><code>&lt;<span class="tok-kw">script src</span>=<span class="tok-str">"https://evil.com/static/app.js"</span>&gt;&lt;/<span class="tok-kw">script</span>&gt;</code></pre>
+
+        <p>The server trusted a header it shouldn't have. On its own, that only affects you, since you're the one sending the header. This is where the cache turns it into a mass attack.</p>
+        <p>The cache key for this request is <code>GET /home</code> plus the <code>Host</code>. <code>X-Forwarded-Host</code> is not part of it. So the cache stores your poisoned response under the key for <code>/home</code>.</p>
+        <p>Now a normal user visits:</p>
+        <pre><code>GET /home HTTP/1.1<br>Host: shop.example.com</code></pre>
+
+        <p>The cache sees the same key, serves the stored response, and the user's browser loads <code>app.js</code> from <strong>evil.com</strong>. That's JavaScript execution for every visitor, with no click on a crafted link required.</p>
+
+        <h2>How to Spot a Cache in the Wild</h2>
+        <p>Before you attack anything, confirm a cache is even there. Look at the response headers:</p>
+
+        <table>
+          <tr><th>Header</th><th>What it tells you</th></tr>
+          <tr><td><code>X-Cache: hit</code>/<code>miss</code></td><td>Whether this response came from the cache</td></tr>
+          <tr><td><code>Age: 42</code></td><td>How many seconds the response has been cached</td></tr>
+          <tr><td><code>Cache-Control: max-age=...</code></td><td>How long it will be cached</td></tr>
+          <tr><td><code>Via</code>,<code>CF-Cache-Status</code>,<code>X-Served-By</code></td><td>Which CDN or proxy is involved</td></tr>
+        </table>
+        <p>If you send the same request twice and the second one says <code>hit</code> or shows an <code>Age</code> value, you've found a cache.</p>
+
+        <h2>How to Test Safely: Use a Cache Buster</h2>
+        <p>This part is important. If you test on a live site, you could genuinely poison responses for real users. To avoid that, add a <strong>unique cache buster</strong> to every test request so you get your own private cache entry:</p>
+        
+        <pre><code>GET /home?cb=dhanu-test-8291 HTTP/1.1</code></pre>
+
+        <p>Change the value each time you want a fresh entry. Your poisoned response then stays in a cache slot nobody else will ever request. Only test with the client's authorization and within scope, and prefer a lab or staging environment when you can.</p>
+
+        <h2>Finding Unkeyed Inputs</h2>
+        <p>Guessing headers by hand is slow. The common workflow is:</p>
+
+        <ol>
+          <li><strong>Burp's Param Miner</strong> extension: right-click a request and run "Guess headers". It brute-forces header names and watches for changes in the response.</li>
+          <li>Look for candidates like<code>X-Forwarded-Host</code>,<code>X-Forwarded-Scheme</code>,<code>X-Original-URL</code>,<code>X-Host</code>,and unkeyed cookies or query parameters.</li>
+          <li>For each candidate, check whether it <strong>changes the response</strong> and whether it is <strong>ignored by the cache key</strong>. You need both.</li>
+        </ol>
+
+        <h2>What Can Go Wrong (Impact)</h2>
+        <p>The impact depends on what the poisoned response contains:</p>
+
+        <ul>
+          <li><strong>Stored-style XSS at scale</strong>, by injecting a script source or reflecting a payload into a cached page</li>
+          <li><strong>Malicious redirects</strong>, by poisoning a redirect response to point at an attacker's site</li>
+          <li><strong>Denial of service</strong>, by caching an error page (for example a 400 or 500) so the real page becomes unreachable</li>
+          <li><strong>Resource hijacking</strong>, by swapping out JS or CSS files that load on every page</li>
+        </ul>
+
+        <p>Poisoning a popular page like the homepage multiplies all of these.</p>
+
+        <h2>Don't Confuse It With Web Cache Deception</h2>
+        <p>They sound similar, but they're opposites:</p>
+
+        <table>
+          <tr>
+            <th></th>
+            <th>Cache Poisoning</th>
+            <th>Cache Deception</th>
+          </tr>
+          <tr>
+            <td>Goal</td>
+            <td>Make the cache store a <strong>malicious</strong> response for others</td>
+            <td>Trick the cache into storing a <strong>victim's private</strong> response so you can read it</td>
+          </tr>
+          <tr>
+            <td>Who is attacked</td>
+            <td>Every user who receives the cached response</td>
+            <td>One specific victim</td>
+          </tr>
+          <tr>
+            <td>Example</td>
+            <td>Your injected header ends up in the cached homepage</td>
+            <td>A victim visits <code>/account/profile.css</code> and their account page gets cached</td>
+          </tr>
+        </table>
+
+        <p>Poisoning is about <strong>putting something bad in</strong>. Deception is about <strong>getting something private out</strong>.</p>
+
+        <h2>How to Fix It</h2>
+        <p>For your report's remediation section:</p>
+        <ul>
+          <li><strong>Don't use unkeyed inputs</strong> to build responses. If a header changes the output, it should be in the cache key, or ignored entirely.</li>
+          <li><strong>Disable caching</strong> on dynamic or sensitive responses, and never cache error pages for long.</li>
+          <li><strong>Strip or reject unexpected headers</strong> such as <code>X-Forwarded-Host</code> at the edge.</li>
+          <li><strong>Validate and encode</strong> anything reflected from headers, just as you would for any user input.</li>
+          <li>Configure the CDN to cache only truly static content.</li>
+        </ul>
+
+        <h2>The One-Line Takeaway</h2>
+        <p><strong>A cache trusts its key. If something outside the key can change the response, you can slip a bad response in once, and the cache will serve it to everyone.</strong></p>
+        <p>Same café, one spoiled latte, a very long queue.</p>
+
+
+      </div>
+
+      <div class="article-tags">
+        <span class="tag" style="cursor:default;">Web App VAPT</span>
+        <span class="tag" style="cursor:default;">Pentesting</span>
+        <span class="tag" style="cursor:default;">CORS</span>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="footerbar">
+    <div class="hint">thanks for reading</div>
+  </div>
+
+</body>
+</html>

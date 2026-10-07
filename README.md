@@ -25,19 +25,20 @@ Plain HTML, CSS, and vanilla JavaScript — no frameworks, no build step.
 
 ## Structure
 
-├── index.html # Home / About / Explore / Contact (single page)
-├── style.css # Shared stylesheet
-├── blogs.html # Blog directory listing
-├── blogs/ # Individual blog article pages
-├── walkthroughs.html # CTF / lab walkthrough listing
-├── walkthroughs/ # Individual writeup documents
-├── certifications.html # Certification file listing
-├── certs/ # Individual certification pdfs
-├── credentials.html # Stats + profile (degree, sectors, tools)
-├── creds/ # Individual credential documents
-├── tools_built.html # Tools built, linking to their GitHub repos
-└── tools/ # Tool logos and documentation files
-
+```
+├── index.html              # Home / About / Explore / Contact (single page)
+├── style.css                # Shared stylesheet
+├── blogs.html                # Blog directory listing
+├── blogs/                   # Individual blog article pages
+├── walkthroughs.html         # CTF / lab walkthrough listing
+├── walkthroughs/              # Individual writeup documents
+├── certifications.html       # Certification file listing
+├── certs/                    # Individual certification PDFs
+├── credentials.html          # Stats + profile (degree, sectors, tools)
+├── creds/                     # Individual credential documents
+├── tools_built.html          # Tools built, linking to their GitHub repos
+└── tools/                      # Tool logos and documentation files
+```
 
 ## Run Locally
 

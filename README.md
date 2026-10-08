@@ -1,4 +1,4 @@
-# Dhanusha K - Portfolio
+# Dhanusha K — Portfolio
 
 🔗 **Live site:** https://dhanusha-k20.github.io/dhanusha_portfolio/
 
